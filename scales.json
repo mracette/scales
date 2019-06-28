@@ -1,0 +1,149 @@
+[
+    {
+        "name" : "Major",
+        "category" : "Common",
+        "intervals" : [
+            2,2,1,2,2,2,1
+        ]
+    },
+    {
+        "name" : "Melodic Minor",
+        "category" : "Common",
+        "intervals" : [
+            2,1,2,2,2,2,1
+        ]
+    },
+    {
+        "name" : "Harmonic Minor",
+        "category" : "Common",
+        "intervals" : [
+            2,1,2,2,1,3,1
+        ]
+    },
+    {
+        "name" : "Major Pentatonic",
+        "category" : "Common",
+        "intervals" : [
+            2,2,3,2,3
+        ]
+    },
+    {
+        "name" : "Minor Pentatonic",
+        "category" : "Common",
+        "intervals" : [
+            3,2,2,3,2
+        ]
+    },
+    {
+        "name" : "Minor Blues",
+        "category" : "Blues",
+        "intervals" : [
+            3,2,1,1,3,2
+        ]
+    },
+    {
+        "name" : "Major Blues",
+        "category" : "Blues",
+        "intervals" : [
+            2,1,1,3,2,3
+        ]
+    },
+    {
+        "name" : "Kansas City Blues",
+        "category" : "Blues",
+        "intervals" : [
+            2,3,2,1,4
+        ]
+    },
+    {
+        "name" : "Dorian",
+        "category" : "Modal",
+        "intervals" : [
+            2,1,2,2,2,1,2
+        ]
+    },
+    {
+        "name" : "Phrygian",
+        "category" : "Modal",
+        "intervals" : [
+            1,2,2,2,1,2,2
+        ]
+    },
+    {
+        "name" : "Lydian",
+        "category" : "Modal",
+        "intervals" : [
+            2,2,2,1,2,2,1
+        ]
+    },
+    {
+        "name" : "Lydian Dominant",
+        "category" : "Modal",
+        "intervals" : [
+            2,2,2,1,2,1,2
+        ]
+    },
+    {
+        "name" : "Mixolydian",
+        "category" : "Modal",
+        "intervals" : [
+            2,2,1,2,2,1,2
+        ]
+    },
+    {
+        "name" : "Aeolian (Natural Minor)",
+        "category" : "Modal",
+        "intervals" : [
+            2,1,2,2,1,2,2
+        ]
+    },
+    {
+        "name" : "Locrian",
+        "category" : "Modal",
+        "intervals" : [
+            1,2,2,1,2,2,2
+        ]
+    },
+    {
+        "name" : "Phrygian",
+        "category" : "Modal",
+        "intervals" : [
+            1,2,2,2,1,2,2
+        ]
+    },
+    {
+        "name" : "Chromatic",
+        "category" : "Uncommon",
+        "intervals" : [
+            1,1,1,1,1,1,1,1,1,1,1,1
+        ]
+    },
+    {
+        "name" : "Whole Tone",
+        "category" : "Uncommon",
+        "intervals" : [
+            2,2,2,2,2,2
+        ]
+    },
+    {
+        "name" : "Altered",
+        "category" : "Uncommon",
+        "intervals" : [
+            1,2,1,2,2,2,2
+        ]
+    },
+    {
+        "name" : "Octatonic",
+        "category" : "Uncommon",
+        "intervals" : [
+            2,1,2,1,2,1,2,1
+        ]
+    },
+    {
+        "name" : "Diminished",
+        "category" : "Uncommon",
+        "intervals" : [
+            1,2,1,2,1,2,1,2
+        ]
+    }
+]
