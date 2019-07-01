@@ -4,3 +4,5 @@
 ## Overview
 
 Visualize and explore musical scales using this interactive web tool. Built with JS/THREE.js/WebAudio.
+
+![Screenshot](./screenshots/img1.png "See Scales")
