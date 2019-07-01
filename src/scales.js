@@ -108,7 +108,7 @@ function init() {
     renderer.setSize(width, height);
     document.getElementById('canvas').appendChild(renderer.domElement);
 
-    clock = new THREE.Clock();
+    const clock = new THREE.Clock();
 
     // @TODO: make the radius responsive to the number of scales in the data
     carouselRadius = 70;
@@ -126,16 +126,21 @@ function init() {
 }
 
 function loadData(src, callback){
-    $.getJSON(src, (data) => {
+
+    let request = new XMLHttpRequest();
+    request.open('GET', src);
+    request.onload = () => {
+        let data = JSON.parse(request.response);
         dataLength = data.length;
         scene.userData.data = data;
         callback(data);
-    });
+    }
+    request.send();
 }
 
 function loadAudio(){
     for(let i = 0; i < 23; i++) {
-        let url = `./audio/marimba/${i+1}.mp3`;
+        let url = `./audio/${i+1}.mp3`;
         let request = new XMLHttpRequest();
         request.open('GET', url, true);
         request.responseType = 'arraybuffer';
@@ -310,13 +315,13 @@ function createRings(notes, group, size, distance, thickness){
             // add a highlight that will be triggered by mousover
             let highlightGeo = new THREE.CircleBufferGeometry(size*(1-thickness), 64);
             let highlightMat = new THREE.MeshBasicMaterial({color: new THREE.Color(0xffffff), transparent: true, opacity: 0.0, wireframe: false});
-            highlight = new THREE.Mesh(highlightGeo, highlightMat);
+            let highlight = new THREE.Mesh(highlightGeo, highlightMat);
             highlight.position.copy(mesh.position);
             highlight.userData.note = i;
             highlight.userData.ring = mesh;
 
             // add a highlight that will be visible and move with the ring
-            visHighlight = highlight.clone();
+            let visHighlight = highlight.clone();
             visHighlight.material = highlightMat.clone();
             visHighlight.material.opacity = 0.05;
 
@@ -471,7 +476,7 @@ function updateLabelPositions() {
 
         let meshScreenPos = screenPosition(dummy, camera);
 
-        noteLabel = noteLabels.elements[i];
+        let noteLabel = noteLabels.elements[i];
 
         noteLabel.style.left = meshScreenPos.x - noteLabel.clientWidth / 2 + 'px';
         noteLabel.style.top = meshScreenPos.y - noteLabel.clientHeight / 2 + 'px';
@@ -599,8 +604,8 @@ function createPanels(distance){
     posAttr.set([0,-1,0,1,0,0,0,1,0]);
     aGeo.addAttribute('position', new THREE.BufferAttribute(posAttr, 3));
     aGeo.computeVertexNormals();
-    aMat = new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.5, side: THREE.DoubleSide});
-    aMesh = new THREE.Mesh(aGeo, aMat);
+    let aMat = new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.5, side: THREE.DoubleSide});
+    let aMesh = new THREE.Mesh(aGeo, aMat);
     aMesh.position.copy(camera.position.clone().multiplyScalar(0.8));
 
     let rMesh = aMesh.clone();

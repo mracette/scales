@@ -11,11 +11,12 @@
     "@babel/cli": "^7.4.4",
     "@babel/core": "^7.4.5",
     "@babel/preset-env": "^7.4.5",
+    "babel-preset-minify": "^0.5.0",
     "uglify-js": "^3.6.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "babel src -d lib"
+    "build": "babel src/scales.js src/keyboard.js index.js -o bundle.js --presets minify"
   },
   "author": "",
   "license": "ISC"
