@@ -355,7 +355,6 @@ function createRings(notes, group, size, distance, thickness){
     }
 }
 
-
 function changePitch(n) {
 
     pitchshift + n < 0 ? 0 : pitchshift + n > 11 ? 11 : pitchshift += n;
@@ -433,6 +432,9 @@ function createLabels(distance, pitchshift) {
 function updateIntervalStyle( newStyle ) {
     if (newStyle) {
         intervalStyle = newStyle;
+
+        // update the interval label positions to match the chosen style
+        updateLabelPositions();
     }
 
     // update style-selection UI
@@ -454,6 +456,7 @@ function updateIntervalStyle( newStyle ) {
             intervalGroup.visible = false;
         }
     }
+
 }
 
 function updateLabels(notes, timeout) {
@@ -490,14 +493,14 @@ function updateLabels(notes, timeout) {
         }
 
         // add new interval labels
-        for(let k = 0; k < data.intervals.length; k++) {
+        for(let k = 0; k < data.intervals[intervalStyle].length; k++) {
 
-            let intScreenPos = screenPosition(data.intervals[k].mesh, camera);
+            let intScreenPos = screenPosition(data.intervals[intervalStyle][k].mesh, camera);
 
             let intElement = document.createElement('div');
                 intElement.classList.add(`interval-label`);
                 intElement.style.position = 'absolute';
-                intElement.innerText = data.intervals[k].interval;
+                intElement.innerText = data.intervals[intervalStyle][k].interval;
                 document.body.appendChild(intElement);
                 intElement.style.left = intScreenPos.x - intElement.clientWidth / 2 + 'px';
                 intElement.style.top = intScreenPos.y - intElement.clientHeight / 2 + 'px';
@@ -528,9 +531,11 @@ function updateLabelPositions() {
 
     // update each interval label
 
-    let intervals = masterGroup.children[scaleshift].userData.intervals;
+    let intervals = masterGroup.children[scaleshift].userData.intervals[intervalStyle];
     let intervalLabels = Array.from(document.getElementsByClassName('interval-label'));
-
+    console.log(masterGroup.children[scaleshift].userData.intervals);
+    console.log(intervalStyle);
+    console.log(intervalLabels);
     for(let j = 0; j < intervals.length; j++) {
 
         let dummy = intervals[j].mesh;
@@ -547,7 +552,12 @@ function updateLabelPositions() {
 function createPaths(intervals, group, size, distance){
 
     let noteCounter = 0;
-    group.userData.intervals = [];
+
+    group.userData.intervals = {
+        arc: [],
+        gear: [],
+        pie: []
+    };
 
     // create a named sub-group for each interval style
     var arcStyleGroup =  new THREE.Group();
@@ -576,45 +586,80 @@ function createPaths(intervals, group, size, distance){
         let s2 = new THREE.Spherical(maxRadius, (getRotation(start)+getRotation(end))/2, - Math.PI / 2);
         let s3 = new THREE.Spherical(minRadius, getRotation(end), - Math.PI / 2);
         
-        let sLabel = new THREE.Spherical(minRadius - intervals[i]*0.85, (getRotation(start)+getRotation(end))/2, - Math.PI / 2);
-
         let v1 = new THREE.Vector3().setFromSpherical(s1);
         let v2 = new THREE.Vector3().setFromSpherical(s2);
         let v3 = new THREE.Vector3().setFromSpherical(s3);
 
-        let vLabel = new THREE.Vector3().setFromSpherical(sLabel);
         var c;
         console.warn("intervalStyle: "+ intervalStyle);
 
-        // draw pie-style intervals into a dedicated group
-        c = createCurve(
+        // draw arc-style intervals into a dedicated group
+        c = createBezierCurve(
             new THREE.Vector2(v1.x, v1.y),
             new THREE.Vector2(v2.x, v2.y),
             new THREE.Vector2(v3.x, v3.y)
         );
         arcStyleGroup.add(c);
 
-        // draw pie-style intervals into a dedicated group
-        // define a very boring "curve" for straight line segment
-        c = createCurve(
-            new THREE.Vector2(0, 0),
-            new THREE.Vector2(v1.x * 0.5, v1.y * 0.5),
-            new THREE.Vector2(v1.x, v1.y)
-        );
-        pieStyleGroup.add(c);
+        // create a mesh to track the position of the interval label in the current formation
+        let arcIntervalLabelPos = new THREE.Mesh();
+        arcIntervalLabelPos.position.copy(new THREE.Vector3().setFromSpherical(
+            // adjusts the interval label radius according to the size of the interval
+            new THREE.Spherical(minRadius - intervals[i]*0.85, (getRotation(start)+getRotation(end))/2, - Math.PI / 2)
+        ));
+        arcIntervalLabelPos.translateZ(carouselRadius);
 
-        // TODO: Draw gear-style intervals into a dedicated group
-        // This should be a circular arc with a pointy half-tooth at start and end: \_____/ \_____/
-        // Instead, this just draws a thicker version of the default 'arcs'
-        let toothOffset = 0.1;
-        let sArcStart = new THREE.Spherical(minRadius, getRotation(start + toothOffset), - Math.PI / 2);
-        let sArcMid = new THREE.Spherical(maxRadius, (getRotation(start)+getRotation(end))/2, - Math.PI / 2);
-        let sArcEnd = new THREE.Spherical(minRadius, getRotation(end - toothOffset), - Math.PI / 2);
-        let vArcStart = new THREE.Vector3().setFromSpherical(sArcStart);
-        let vArcMid = new THREE.Vector3().setFromSpherical(sArcMid);
-        let vArcEnd = new THREE.Vector3().setFromSpherical(sArcEnd);
+        group.userData.intervals.arc.push({
+            mesh: arcIntervalLabelPos,
+            interval: intervals[i]
+        })
+
+        // draw gear-style intervals into a dedicated group
+        // this is a circular arc with a pointy half-tooth at start and end: \_____/ \_____/
+        let innerRadiusScale = 0.8;
+        let angleOffset = Math.PI / 12;
+        let sArcStart = new THREE.Spherical(minRadius * innerRadiusScale, getRotation(start + angleOffset), - Math.PI / 2);
+        let sArcEnd = new THREE.Spherical(minRadius * innerRadiusScale, getRotation(end - angleOffset), - Math.PI / 2);
+
+        // construct circular arc segment 
+        c = createArcCurve(
+            sArcStart,
+            sArcEnd
+        );
+
+        // construct the first tooth, a straight line from the opening note label to the inner circular curve
+        let sOpeningToothStart = new THREE.Spherical(minRadius, getRotation(start + angleOffset / 3), - Math.PI / 2);
+        let sOpeningToothEnd = new THREE.Spherical(minRadius * innerRadiusScale, getRotation(start + angleOffset), - Math.PI / 2);
+
+        let vOpeningToothStart = new THREE.Vector3().setFromSpherical(sOpeningToothStart);
+        let vOpeningToothEnd = new THREE.Vector3().setFromSpherical(sOpeningToothEnd);
+
+        let openingTooth = createBezierCurve(vOpeningToothStart, vOpeningToothStart, vOpeningToothEnd);
+
+        // construct the second tooth, a straight line from the inner circular curve to the closing note label
+        let sClosingToothStart = new THREE.Spherical(minRadius * innerRadiusScale, getRotation(end - angleOffset), - Math.PI / 2);
+        let sClosingToothEnd = new THREE.Spherical(minRadius, getRotation(end - angleOffset / 3), - Math.PI / 2);
+
+        let vClosingToothStart = new THREE.Vector3().setFromSpherical(sClosingToothStart);
+        let vClosingToothEnd = new THREE.Vector3().setFromSpherical(sClosingToothEnd);
+
+        let closingTooth = createBezierCurve(vClosingToothStart, vClosingToothStart, vClosingToothEnd);
+
+        // create a mesh to track the position of the interval label in the current formation
+        let gearIntervalLabelPos = new THREE.Mesh();
+        gearIntervalLabelPos.position.copy(new THREE.Vector3().setFromSpherical(
+            // sets the interval label on the inside of the circular arc segments
+            new THREE.Spherical(innerRadiusScale * 0.85 * minRadius, getRotation((start + end) / 2), - Math.PI / 2)
+        ));
+        gearIntervalLabelPos.translateZ(carouselRadius);
+
+        group.userData.intervals.gear.push({
+            mesh: gearIntervalLabelPos,
+            interval: intervals[i]
+        })
+
         /* These "pins" are kind of an interesting alternative.
-        c = createCurve(
+        c = createBezierCurve(
             new THREE.Vector2(v1.x, v1.y),
             new THREE.Vector2(vArcStart.x - v1.x, vArcStart.y - v1.y),
             //new THREE.Vector2(vArcStart.x - (v1.x/2), vArcStart.y - (v1.y/2)),
@@ -623,16 +668,31 @@ function createPaths(intervals, group, size, distance){
             //new THREE.Vector2(vArcEnd.x, vArcEnd.y)
         );
         */
-        c = createCurve(
-            new THREE.Vector2(vArcStart.x, vArcStart.y),
-            new THREE.Vector2(vArcMid.x, vArcMid.y),
-            new THREE.Vector2(vArcEnd.x, vArcEnd.y)
-        );
-        gearStyleGroup.add(c);
 
-        let dummy = new THREE.Mesh();
-        dummy.position.copy(vLabel);
-        dummy.translateZ(carouselRadius);
+        gearStyleGroup.add(c, openingTooth, closingTooth);
+
+        // draw pie-style intervals into a dedicated group
+        // define a very boring "curve" for straight line segment
+        c = createBezierCurve(
+            new THREE.Vector2(0, 0),
+            new THREE.Vector2(v1.x * 0.5, v1.y * 0.5),
+            new THREE.Vector2(v1.x, v1.y)
+        );
+        pieStyleGroup.add(c);
+
+        // create a mesh to track the position of the interval label in the current formation
+        let pieIntervalLabelPos = new THREE.Mesh();
+        pieIntervalLabelPos.position.copy(new THREE.Vector3().setFromSpherical(
+            // pie interval labels are similar to the gear interval labels, but with a smaller radius
+            new THREE.Spherical(Math.pow(innerRadiusScale, 4) * minRadius, getRotation((start + end) / 2), - Math.PI / 2)
+        ));
+        pieIntervalLabelPos.translateZ(carouselRadius);
+        
+        group.userData.intervals.pie.push({
+            mesh: pieIntervalLabelPos,
+            interval: intervals[i]
+        })
+
  
         // This just honestly doesn't look as good:
 
@@ -649,11 +709,6 @@ function createPaths(intervals, group, size, distance){
         //     case 5:
         //         intervalText = 'P4'; break;
         // }
-
-        group.userData.intervals.push({
-            mesh: dummy,
-            interval: intervals[i]
-        })
 
         noteCounter += intervals[i];
 
@@ -717,7 +772,7 @@ function createPanels(distance){
 
 }
 
-function createCurve(s, m, e){
+function createBezierCurve(s, m, e){
     let p = 30;
     
     let points = new THREE.QuadraticBezierCurve(s, m, e).getPoints(p);
@@ -739,7 +794,40 @@ function createCurve(s, m, e){
         new THREE.LineBasicMaterial({color: 0x666666, linewidth: 1})
         );
         
-        return cLine;
+    return cLine;
+}
+
+function createArcCurve(s0, s1) {
+    let p = 30;
+
+    let geo = new THREE.BufferGeometry();
+    let pos = [];
+    let posAttr = new Float32Array((p+1)*3);
+
+    for (let i = 0; i <= p; i++) {
+
+        let sCoord = new THREE.Spherical(
+            s0.radius,
+            s0.phi + i/p * (s1.phi - s0.phi),
+            s0.theta
+        );
+        let vCoord = new THREE.Vector3().setFromSpherical(sCoord);
+
+        pos.push(vCoord.x);
+        pos.push(vCoord.y);
+        pos.push(0);
+    }
+
+    posAttr.set(pos);
+    
+    geo.addAttribute('position', new THREE.BufferAttribute(posAttr, 3));
+    let cLine = new THREE.Line(
+        geo,
+        new THREE.LineBasicMaterial({color: 0x666666, linewidth: 1})
+    );
+
+    return cLine;
+
 }
     
 function rotateCarousel(dir){
