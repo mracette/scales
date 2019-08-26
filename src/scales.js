@@ -19,6 +19,7 @@ let mouse = new THREE.Vector2();
 let pitchshift = 0;
 let scaleshift = 0;
 let noteLabelType = 'flat';
+let intervalStyle = 'arc';  // arc | pie | gear ...
 let noteLabels = {
     sharp: ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'],
     flat: ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'],
@@ -84,6 +85,16 @@ function initDocument() {
             noteLabelType = 'sharp';
             createLabels(carouselRadius, pitchshift);
         }
+    }
+
+    var intStyleControls = document.getElementById('interval-styles')
+                                   .getElementsByTagName('a');
+    for (let i = 0; i < intStyleControls.length; i++) {
+      var styleControl = intStyleControls[i];
+      styleControl.onclick = (evt) => {
+        newStyle = evt.target.getAttribute('id');
+        updateIntervalStyle(newStyle);
+      }
     }
 
     document.getElementById('increase-root').onclick = () => {
@@ -220,6 +231,9 @@ function visualize(data){
 
             noteRadius = distance;
 
+            // gather differently styled intervals (as groups)
+            scene.userData.styledIntervals = [ ];
+
             // create labels
             createLabels(distance, pitchshift);
 
@@ -269,6 +283,9 @@ function visualize(data){
                 masterGroup.add(scaleGroup);
 
             }
+
+            // show visible interval styles
+            updateIntervalStyle();
 
             // create navigation panels
             createPanels(distance);
@@ -337,6 +354,7 @@ function createRings(notes, group, size, distance, thickness){
         }
     }
 }
+
 
 function changePitch(n) {
 
@@ -410,7 +428,32 @@ function createLabels(distance, pitchshift) {
         document.getElementById('flat').style.textDecoration = 'underline';
         document.getElementById('sharp').style.textDecoration = 'none';
     }
+}
 
+function updateIntervalStyle( newStyle ) {
+    if (newStyle) {
+        intervalStyle = newStyle;
+    }
+
+    // update style-selection UI
+    var intStyleControls = document.getElementById('interval-styles').children;
+    for (let i = 0; i < intStyleControls.length; i++) {
+      var styleControl = intStyleControls[i];
+      styleControl.style.textDecoration = 'none';
+    }
+    document.getElementById(intervalStyle).style.textDecoration = 'underline';
+
+    // hide all of our pre-rendered interval groups, but show the chosen style
+    var styledIntervalGroups = scene.userData.styledIntervals || [ ];
+    for (var i = 0; i < styledIntervalGroups.length; i++) {
+        var intervalGroup = styledIntervalGroups[i];
+        if (intervalGroup.name == intervalStyle +'-intervals') {
+            // e.g. 'pie-intervals'
+            intervalGroup.visible = true;
+        } else {
+            intervalGroup.visible = false;
+        }
+    }
 }
 
 function updateLabels(notes, timeout) {
@@ -506,6 +549,17 @@ function createPaths(intervals, group, size, distance){
     let noteCounter = 0;
     group.userData.intervals = [];
 
+    // create a named sub-group for each interval style
+    var arcStyleGroup =  new THREE.Group();
+    arcStyleGroup.name = 'arc-intervals';
+    group.add(arcStyleGroup);
+    scene.userData.styledIntervals.push( arcStyleGroup );
+
+    var pieStyleGroup =  new THREE.Group();
+    pieStyleGroup.name = 'pie-intervals';
+    group.add(pieStyleGroup);
+    scene.userData.styledIntervals.push( pieStyleGroup );
+
     for(let i = 0; i < intervals.length; i++) {
 
         let start = noteCounter;
@@ -524,12 +578,25 @@ function createPaths(intervals, group, size, distance){
         let v3 = new THREE.Vector3().setFromSpherical(s3);
 
         let vLabel = new THREE.Vector3().setFromSpherical(sLabel);
-        
-        let c = createCurve(
+        var c;
+        console.warn("intervalStyle: "+ intervalStyle);
+
+        // draw pie-style intervals into a dedicated group
+        c = createCurve(
             new THREE.Vector2(v1.x, v1.y),
             new THREE.Vector2(v2.x, v2.y),
             new THREE.Vector2(v3.x, v3.y)
         );
+        arcStyleGroup.add(c);
+
+        // draw pie-style intervals into a dedicated group
+        // define a very boring "curve" for straight line segment
+        c = createCurve(
+            new THREE.Vector2(0, 0),
+            new THREE.Vector2(v1.x * 0.5, v1.y * 0.5),
+            new THREE.Vector2(v1.x, v1.y)
+        );
+        pieStyleGroup.add(c);
 
         let dummy = new THREE.Mesh();
         dummy.position.copy(vLabel);
@@ -555,8 +622,6 @@ function createPaths(intervals, group, size, distance){
             mesh: dummy,
             interval: intervals[i]
         })
-
-        group.add(c);
 
         noteCounter += intervals[i];
 
