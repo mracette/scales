@@ -560,6 +560,11 @@ function createPaths(intervals, group, size, distance){
     group.add(pieStyleGroup);
     scene.userData.styledIntervals.push( pieStyleGroup );
 
+    var gearStyleGroup =  new THREE.Group();
+    gearStyleGroup.name = 'gear-intervals';
+    group.add(gearStyleGroup);
+    scene.userData.styledIntervals.push( gearStyleGroup );
+
     for(let i = 0; i < intervals.length; i++) {
 
         let start = noteCounter;
@@ -597,6 +602,33 @@ function createPaths(intervals, group, size, distance){
             new THREE.Vector2(v1.x, v1.y)
         );
         pieStyleGroup.add(c);
+
+        // TODO: Draw gear-style intervals into a dedicated group
+        // This should be a circular arc with a pointy half-tooth at start and end: \_____/ \_____/
+        // Instead, this just draws a thicker version of the default 'arcs'
+        let toothOffset = 0.1;
+        let sArcStart = new THREE.Spherical(minRadius, getRotation(start + toothOffset), - Math.PI / 2);
+        let sArcMid = new THREE.Spherical(maxRadius, (getRotation(start)+getRotation(end))/2, - Math.PI / 2);
+        let sArcEnd = new THREE.Spherical(minRadius, getRotation(end - toothOffset), - Math.PI / 2);
+        let vArcStart = new THREE.Vector3().setFromSpherical(sArcStart);
+        let vArcMid = new THREE.Vector3().setFromSpherical(sArcMid);
+        let vArcEnd = new THREE.Vector3().setFromSpherical(sArcEnd);
+        /* These "pins" are kind of an interesting alternative.
+        c = createCurve(
+            new THREE.Vector2(v1.x, v1.y),
+            new THREE.Vector2(vArcStart.x - v1.x, vArcStart.y - v1.y),
+            //new THREE.Vector2(vArcStart.x - (v1.x/2), vArcStart.y - (v1.y/2)),
+            new THREE.Vector2(vArcStart.x, vArcStart.y)
+            //new THREE.Vector2(vArcMid.x * 2.0, vArcMid.y * 2.0),
+            //new THREE.Vector2(vArcEnd.x, vArcEnd.y)
+        );
+        */
+        c = createCurve(
+            new THREE.Vector2(vArcStart.x, vArcStart.y),
+            new THREE.Vector2(vArcMid.x, vArcMid.y),
+            new THREE.Vector2(vArcEnd.x, vArcEnd.y)
+        );
+        gearStyleGroup.add(c);
 
         let dummy = new THREE.Mesh();
         dummy.position.copy(vLabel);
