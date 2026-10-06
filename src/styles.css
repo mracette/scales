@@ -68,6 +68,13 @@ a:hover {
 
 /* Layout */
 
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
 .app {
   display: grid;
   grid-template-columns: 272px 1fr;
@@ -89,16 +96,16 @@ a:hover {
   flex-direction: column;
   align-items: center;
   min-width: 0;
-  padding: 28px 24px 24px;
-  overflow-y: auto;
+  min-height: 0;
+  padding: 24px 24px 18px;
+  overflow: hidden;
 }
 
 .stage > * {
   flex-shrink: 0;
 }
 
-.mobile-header,
-.mobile-footer {
+.mobile-header {
   display: none;
 }
 
@@ -341,9 +348,12 @@ a:hover {
 .circle-area {
   position: relative;
   display: flex;
+  flex: 1 1 0;
+  flex-shrink: 1;
   justify-content: center;
   width: 100%;
-  margin-top: 12px;
+  min-height: 0;
+  margin-top: 8px;
 }
 
 .sound-hint {
@@ -369,24 +379,11 @@ a:hover {
 }
 
 .note-circle {
-  width: min(100%, 560px, max(320px, calc(100dvh - 380px)));
+  width: 100%;
+  height: 100%;
+  max-width: 620px;
   overflow: visible;
   user-select: none;
-}
-
-.interval-layer {
-  animation: lines-in 350ms ease-out 450ms both;
-}
-
-@keyframes lines-in {
-  from {
-    opacity: 0;
-  }
-}
-
-.scale-shape {
-  fill: rgb(0 225 158 / 0.07);
-  fill-rule: evenodd;
 }
 
 .interval-lines path {
@@ -477,8 +474,8 @@ a:hover {
 /* Keyboard */
 
 .keyboard {
-  width: min(100%, 340px);
-  margin-top: 8px;
+  width: min(100%, 320px);
+  margin-top: 6px;
   touch-action: manipulation;
   user-select: none;
 }
@@ -522,7 +519,7 @@ a:hover {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  margin-top: 18px;
+  justify-self: center;
   padding: 10px 22px 10px 18px;
   border: 2px solid var(--pink);
   border-radius: 999px;
@@ -546,16 +543,19 @@ a:hover {
 
 /* Controls */
 
-.display-options {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 16px 8px 0;
-  border-top: 1px solid var(--border);
+.bottom-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  gap: 16px;
+  width: 100%;
+  max-width: 640px;
+  margin-top: 16px;
 }
 
-.display-options.mobile-only {
-  display: none;
+.line-style-picker {
+  justify-self: end;
+  text-align: right;
 }
 
 .control {
@@ -633,7 +633,7 @@ a:hover {
 }
 
 .shortcuts {
-  margin: 24px 0 0;
+  margin: 14px 0 0;
   color: var(--dim);
   font-size: 0.8rem;
 }
@@ -653,8 +653,8 @@ kbd {
 
 @media (max-width: 899px) {
   .app {
-    display: block;
-    height: auto;
+    display: flex;
+    flex-direction: column;
   }
 
   .sidebar {
@@ -662,46 +662,115 @@ kbd {
   }
 
   .stage {
-    padding: 16px 16px 28px;
-    overflow: visible;
+    flex: 1;
+    padding: 12px 16px 16px;
   }
 
   .mobile-header {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
+    align-items: center;
     width: 100%;
-    margin-bottom: 16px;
+    margin-bottom: 10px;
   }
 
-  .mobile-footer {
-    display: block;
-    margin-top: 24px;
+  .mobile-header .brand {
+    padding: 0;
+    font-size: 1.05rem;
   }
 
-  .note-circle {
-    width: min(100%, 480px);
+  .mobile-header .brand svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .mobile-header .credits {
+    padding: 0;
+    font-size: 0.8rem;
+  }
+
+  .title-row {
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+  }
+
+  .title h1 {
+    font-size: clamp(1.25rem, 6vw, 1.6rem);
+  }
+
+  .step-button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .meta {
+    margin-top: 4px;
+    font-size: 0.85rem;
+  }
+
+  .formula {
+    font-size: 0.85rem;
   }
 
   .root-picker {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
+    margin-top: 10px;
   }
 
-  .root-picker .segmented {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+  .root-picker legend {
+    display: none;
   }
 
-  .display-options.mobile-only {
-    display: flex;
-    align-items: center;
-    margin-top: 28px;
-    padding: 0;
-    border: 0;
+  .root-picker .segmented button {
+    padding: 6px 0;
+    font-size: 0.8rem;
   }
 
-  .display-options .control {
-    text-align: center;
+  .bottom-row {
+    grid-template-columns: auto auto;
+    justify-content: space-between;
+    row-gap: 12px;
+    margin-top: 12px;
+  }
+
+  .play-button {
+    grid-row: 1;
+    grid-column: 1 / -1;
+    padding: 8px 20px 8px 16px;
+  }
+
+  .spelling-picker {
+    grid-row: 2;
+    grid-column: 1;
+  }
+
+  .line-style-picker {
+    grid-row: 2;
+    grid-column: 2;
+  }
+
+  .segmented button {
+    min-width: 0;
+    padding: 5px 10px;
+    font-size: 0.875rem;
+  }
+}
+
+@media (min-width: 900px) and (max-height: 820px) {
+  .shortcuts {
+    display: none;
+  }
+
+  .keyboard {
+    width: min(100%, 260px);
+  }
+}
+
+@media (max-width: 899px) and (max-height: 760px) {
+  .formula {
+    display: none;
+  }
+
+  .keyboard {
+    width: min(100%, 240px);
   }
 }
 

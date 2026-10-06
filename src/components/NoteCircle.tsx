@@ -5,21 +5,17 @@ import { formatDegree, formatNote, mod12, noteNameForPitch } from "../theory/not
 import type { SpelledScale } from "../theory/scales";
 
 export type LineStyle = "arcs" | "shape" | "wedges";
-export type CircleLayout = "chromatic" | "fifths";
 
 const NOTE_RADIUS = 40;
 const RING_RADIUS = 7;
 const INNER_RADIUS = NOTE_RADIUS - RING_RADIUS;
 const MORPH_MS = 420;
-const LAYOUT_MS = 700;
 
 const STEP_LABELS: Record<number, string> = { 1: "H", 2: "W", 3: "W+H", 4: "2W" };
 
-/** Position of a note `semitones` above the root: the slot (0–11, clockwise from the top) it's drawn in. */
-const slotOf = (semitones: number, layout: CircleLayout) => mod12(layout === "fifths" ? semitones * 7 : semitones);
-
-function point(radius: number, slot: number) {
-  const angle = (slot * Math.PI) / 6;
+/** `semitones` above the root, drawn clockwise with the root at the top. */
+function point(radius: number, semitones: number) {
+  const angle = (semitones * Math.PI) / 6;
   return { x: radius * Math.sin(angle), y: -radius * Math.cos(angle) };
 }
 
@@ -30,7 +26,7 @@ interface Segment {
   label: { x: number; y: number };
 }
 
-/** `delta` is the signed number of slots from start to end, the short way around. */
+/** `delta` is the signed number of semitones from start to end, the short way around. */
 function arcSegment(start: number, delta: number): Segment {
   const size = Math.abs(delta);
   const middle = start + delta / 2;
@@ -70,27 +66,18 @@ interface NoteCircleProps {
   spelled: SpelledScale;
   rootPitch: number;
   lineStyle: LineStyle;
-  layout: CircleLayout;
   onPlay: (offset: number) => void;
 }
 
 interface IntervalLinesProps {
-  offsetsKey: string;
+  offsets: number[];
   steps: number[];
   lineStyle: LineStyle;
-  layout: CircleLayout;
 }
 
-/**
- * Lines join neighboring notes around the circle. In chromatic order that's each step of the scale; in fifths order
- * the steps aren't neighbors, so the labels are left off. Remounted per layout so lines fade in after notes move.
- */
-function IntervalLines({ offsetsKey, steps, lineStyle, layout }: IntervalLinesProps) {
-  const targets = useMemo(() => {
-    const offsets = offsetsKey.split(",").map(Number);
-    const ordered = [...offsets].sort((a, b) => slotOf(a, layout) - slotOf(b, layout));
-    return padToTwelve(ordered).map((offset) => slotOf(offset, layout));
-  }, [offsetsKey, layout]);
+function IntervalLines({ offsets, steps, lineStyle }: IntervalLinesProps) {
+  const offsetsKey = offsets.join(",");
+  const targets = useMemo(() => padToTwelve(offsetsKey.split(",").map(Number)), [offsetsKey]);
   const slots = useTweenedValues(targets, MORPH_MS, 12);
 
   const buildSegment = SEGMENT_BUILDERS[lineStyle];
@@ -99,14 +86,12 @@ function IntervalLines({ offsetsKey, steps, lineStyle, layout }: IntervalLinesPr
     return {
       ...buildSegment(start, delta),
       opacity: Math.min(1, Math.abs(delta) / 0.5),
-      text: layout === "chromatic" && steps[i] !== undefined ? (STEP_LABELS[steps[i]] ?? String(steps[i])) : null,
+      text: steps[i] === undefined ? null : (STEP_LABELS[steps[i]] ?? String(steps[i])),
     };
   });
-  const shapePath = `M ${slots.map((slot) => xy(point(INNER_RADIUS, slot))).join(" L ")} Z`;
 
   return (
-    <g className="interval-layer">
-      {lineStyle === "shape" && <path className="scale-shape" d={shapePath} />}
+    <g>
       <g className="interval-lines">
         {segments.map((segment, i) => (
           <path key={i} d={segment.path} opacity={segment.opacity} />
@@ -125,9 +110,7 @@ function IntervalLines({ offsetsKey, steps, lineStyle, layout }: IntervalLinesPr
   );
 }
 
-export function NoteCircle({ spelled, rootPitch, lineStyle, layout, onPlay }: NoteCircleProps) {
-  const noteTargets = useMemo(() => Array.from({ length: 12 }, (_, offset) => slotOf(offset, layout)), [layout]);
-  const noteSlots = useTweenedValues(noteTargets, LAYOUT_MS, 12);
+export function NoteCircle({ spelled, rootPitch, lineStyle, onPlay }: NoteCircleProps) {
   const noteElements = useRef(new Map<number, SVGGElement>());
 
   useEffect(
@@ -149,21 +132,14 @@ export function NoteCircle({ spelled, rootPitch, lineStyle, layout, onPlay }: No
 
   return (
     <svg className="note-circle" viewBox="-57 -57 114 114" role="group" aria-label="Notes in the scale">
-      <IntervalLines
-        key={layout}
-        offsetsKey={spelled.offsets.join(",")}
-        steps={spelled.steps}
-        lineStyle={lineStyle}
-        layout={layout}
-      />
+      <IntervalLines offsets={spelled.offsets} steps={spelled.steps} lineStyle={lineStyle} />
       {Array.from({ length: 12 }, (_, offset) => {
         const index = indexByOffset.get(offset);
         const inScale = index !== undefined;
         const note = inScale ? spelled.notes[index]! : noteNameForPitch(rootPitch + offset, spelled.flavor);
         const name = formatNote(note);
-        const slot = noteSlots[offset]!;
-        const center = point(NOTE_RADIUS, slot);
-        const degreeAt = point(NOTE_RADIUS + RING_RADIUS + 4.5, slot);
+        const center = point(NOTE_RADIUS, offset);
+        const degreeAt = point(NOTE_RADIUS + RING_RADIUS + 4.5, offset);
         const role = offset === 0 ? "root" : inScale ? "in-scale" : "out-of-scale";
         return (
           <g key={offset}>
