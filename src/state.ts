@@ -61,7 +61,7 @@ export function initialState(): AppState {
     scaleId: DEFAULT_SCALE_ID,
     rootPitch: 0,
     spelling: readStored(SPELLING_KEY, SPELLINGS, "auto"),
-    lineStyle: readStored(LINE_STYLE_KEY, LINE_STYLES, "arcs"),
+    lineStyle: readStored(LINE_STYLE_KEY, LINE_STYLES, "wedges"),
   };
   return { ...defaults, ...readHash(window.location.hash, defaults.spelling) };
 }
