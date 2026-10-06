@@ -11,7 +11,6 @@ export function ScaleList({ scaleId, onSelect }: ScaleListProps) {
       {SCALE_GROUPS.map((group) => (
         <section key={group.name}>
           <h2>{group.name}</h2>
-          {group.note && <p className="group-note">{group.note}</p>}
           <ul>
             {group.scales.map((scale) => (
               <li key={scale.id}>

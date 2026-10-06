@@ -144,9 +144,14 @@ export function NoteCircle({ spelled, rootPitch, lineStyle, onPlay }: NoteCircle
                 role="button"
                 tabIndex={0}
                 aria-label={`Play ${name}`}
+                onPointerEnter={(event) => {
+                  if (event.pointerType === "mouse" && inScale) onPlay(offset);
+                }}
                 onPointerDown={(event) => {
                   if (event.button === 0) onPlay(offset);
                 }}
+                // Keep focus where it was so Space still plays the scale after clicking a note.
+                onMouseDown={(event) => event.preventDefault()}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();

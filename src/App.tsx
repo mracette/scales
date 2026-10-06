@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { playPitch } from "./audio";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { isAudioUnlocked, onAudioUnlocked, playPitch } from "./audio";
 import { LineStylePicker, RootPicker, SpellingPicker } from "./components/Controls";
 import { Keyboard } from "./components/Keyboard";
 import { NoteCircle } from "./components/NoteCircle";
@@ -50,6 +50,7 @@ export function App() {
     [spelled.offsets, state.rootPitch],
   );
   const player = useScalePlayer(scalePitches);
+  const soundUnlocked = useSyncExternalStore(onAudioUnlocked, isAudioUnlocked);
   // A control reached with Tab keeps Space for itself; one that's focused because it was clicked shouldn't.
   const focusedByTab = useRef(false);
 
@@ -130,7 +131,14 @@ export function App() {
                 <path d="M6 9l6 6 6-6" />
               </svg>
             </h1>
-            <select aria-label="Choose a scale" value={scale.id} onChange={(event) => update({ scaleId: event.target.value })}>
+            <select
+              aria-label="Choose a scale"
+              value={scale.id}
+              onChange={(event) => {
+                update({ scaleId: event.target.value });
+                event.target.blur();
+              }}
+            >
               {SCALE_GROUPS.map((group) => (
                 <optgroup key={group.name} label={group.name}>
                   {group.scales.map((option) => (
@@ -181,12 +189,15 @@ export function App() {
           onChange={(rootPitch) => update({ rootPitch })}
         />
 
-        <NoteCircle
-          spelled={spelled}
-          rootPitch={state.rootPitch}
-          lineStyle={state.lineStyle}
-          onPlay={(offset) => playPitch(state.rootPitch + offset)}
-        />
+        <div className="circle-area">
+          <NoteCircle
+            spelled={spelled}
+            rootPitch={state.rootPitch}
+            lineStyle={state.lineStyle}
+            onPlay={(offset) => playPitch(state.rootPitch + offset)}
+          />
+          {!soundUnlocked && <p className="sound-hint">Click anywhere for sound</p>}
+        </div>
 
         <Keyboard spelled={spelled} rootPitch={state.rootPitch} onPlay={playPitch} />
 

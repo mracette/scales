@@ -7,6 +7,8 @@ let context: AudioContext | null = null;
 let output: GainNode | null = null;
 let samples: Promise<(AudioBuffer | null)[]> | null = null;
 const listeners = new Set<NoteListener>();
+const unlockListeners = new Set<() => void>();
+let unlocked = false;
 
 const sampleFiles = Array.from({ length: SAMPLE_COUNT }, (_, i) =>
   fetch(`${import.meta.env.BASE_URL}audio/${i + 1}.mp3`).then((response) => response.arrayBuffer()),
@@ -36,11 +38,24 @@ function loadSamples() {
   return samples;
 }
 
-/** Browsers only allow sound after a user gesture, so call this from one. */
+/** Browsers only allow sound after a click or key press, so this must be called from one. */
 export function unlockAudio() {
   const ctx = getContext();
   if (ctx.state === "suspended") void ctx.resume();
   void loadSamples();
+  if (!unlocked) {
+    unlocked = true;
+    unlockListeners.forEach((listener) => listener());
+  }
+}
+
+export const isAudioUnlocked = () => unlocked;
+
+export function onAudioUnlocked(listener: () => void) {
+  unlockListeners.add(listener);
+  return () => {
+    unlockListeners.delete(listener);
+  };
 }
 
 export function onNotePlayed(listener: NoteListener) {
@@ -53,7 +68,7 @@ export function onNotePlayed(listener: NoteListener) {
 /** Plays a pitch counted in semitones above the lowest C of the sample set. */
 export function playPitch(pitch: number) {
   listeners.forEach((listener) => listener(pitch));
-  unlockAudio();
+  if (!unlocked) return;
   void loadSamples().then((buffers) => {
     const sampleIndex = Math.max(0, Math.min(pitch, SAMPLE_COUNT - 1));
     const buffer = buffers[sampleIndex];

@@ -24,7 +24,6 @@ export interface Scale {
 
 export interface ScaleGroup {
   name: string;
-  note?: string;
   scales: Scale[];
 }
 
@@ -79,7 +78,7 @@ export const SCALES: Scale[] = [
 ];
 
 export const SCALE_GROUPS: ScaleGroup[] = [
-  { name: MAJOR, note: "Brightest to darkest. Each step changes one note.", scales: [] },
+  { name: MAJOR, scales: [] },
   { name: MELODIC, scales: [] },
   { name: HARMONIC, scales: [] },
   { name: PENTATONIC, scales: [] },

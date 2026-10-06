@@ -169,13 +169,6 @@ a:hover {
   text-transform: uppercase;
 }
 
-.group-note {
-  margin: 0 0 6px;
-  padding: 0 8px;
-  color: var(--dim);
-  font-size: 0.75rem;
-  line-height: 1.35;
-}
 
 .scale-list ul {
   margin: 0;
@@ -345,9 +338,38 @@ a:hover {
 
 /* Note circle */
 
+.circle-area {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.sound-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: 0;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+@media (hover: none) {
+  .sound-hint {
+    display: none;
+  }
+}
+
 .note-circle {
   width: min(100%, 540px, max(320px, calc(100dvh - 450px)));
-  margin-top: 12px;
   overflow: visible;
   user-select: none;
 }

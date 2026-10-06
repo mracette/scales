@@ -14,7 +14,13 @@ export function useScalePlayer(pitches: number[]) {
     timers.current = [];
   }, []);
 
-  useEffect(() => clearTimers, [key, clearTimers]);
+  useEffect(
+    () => () => {
+      clearTimers();
+      setPlayingKey(null);
+    },
+    [key, clearTimers],
+  );
 
   const playing = playingKey === key;
 

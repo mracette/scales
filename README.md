@@ -2,7 +2,7 @@
 
 **Live:** https://mracette.github.io/scales
 
-See and hear musical scales on a circle of all twelve notes. Pick a scale and a root, tap notes or the keyboard to hear them, and watch the shape change as you move between scales. The modes of major are ordered brightest to darkest, so each step changes exactly one note.
+See and hear musical scales on a circle of all twelve notes. Pick a scale and a root, hover or tap notes to hear them, and watch the shape change as you move between scales.
 
 ![See Scales](./screenshots/see-scales.png)
 
