@@ -1,4 +1,4 @@
 .DS_Store
-typings
-typings.json
-jsconfig.json
+node_modules
+dist
+*.tsbuildinfo
