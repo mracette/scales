@@ -19,7 +19,7 @@ See and hear musical scales on a circle of all twelve notes. Pick a scale and a 
 
 ```sh
 npm install
-npm run dev     # http://localhost:5173/scales/
+npm run dev     # http://localhost:4747/scales/
 npm run check   # lint, test, build
 ```
 
