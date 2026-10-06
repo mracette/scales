@@ -11,7 +11,8 @@ See and hear musical scales on a circle of all twelve notes. Pick a scale and a 
 - 31 scales: the modes of major, melodic minor and harmonic minor, plus pentatonic, blues and symmetric scales
 - Correct note spelling for every key (D major shows F♯, not G♭), with an optional ♭/♯ preference
 - Scale degrees on every note, and the parent scale for every mode ("Mode 2 of C Major")
-- Three ways to draw the intervals: arcs, gear and wedges
+- Three ways to draw the intervals (arcs, shape and wedges), with steps labeled W and H
+- Chromatic or circle-of-fifths order for the circle; in fifths order, scales like major and its modes sit in one unbroken block
 - Shareable links, e.g. [`#/d/dorian`](https://mracette.github.io/scales/#/d/dorian)
 - Keyboard shortcuts: <kbd>←</kbd> <kbd>→</kbd> scale, <kbd>↑</kbd> <kbd>↓</kbd> root, <kbd>space</kbd> play
 

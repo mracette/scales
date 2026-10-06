@@ -1,20 +1,25 @@
 import { useEffect, useMemo, useRef } from "react";
 import { onNotePlayed } from "../audio";
-import { useTweenedValues } from "../hooks/useTweenedValues";
+import { useTweenedValues, wrappedDelta } from "../hooks/useTweenedValues";
 import { formatDegree, formatNote, mod12, noteNameForPitch } from "../theory/notes";
 import type { SpelledScale } from "../theory/scales";
 
-export type LineStyle = "arcs" | "gear" | "wedges";
+export type LineStyle = "arcs" | "shape" | "wedges";
+export type CircleLayout = "chromatic" | "fifths";
 
 const NOTE_RADIUS = 40;
 const RING_RADIUS = 7;
 const INNER_RADIUS = NOTE_RADIUS - RING_RADIUS;
-const GEAR_RADIUS = INNER_RADIUS * 0.8;
 const MORPH_MS = 420;
+const LAYOUT_MS = 700;
 
-/** `semitones` above the root, drawn clockwise with the root at the top. */
-function point(radius: number, semitones: number) {
-  const angle = (semitones * Math.PI) / 6;
+const STEP_LABELS: Record<number, string> = { 1: "H", 2: "W", 3: "W+H", 4: "2W" };
+
+/** Position of a note `semitones` above the root: the slot (0–11, clockwise from the top) it's drawn in. */
+const slotOf = (semitones: number, layout: CircleLayout) => mod12(layout === "fifths" ? semitones * 7 : semitones);
+
+function point(radius: number, slot: number) {
+  const angle = (slot * Math.PI) / 6;
   return { x: radius * Math.sin(angle), y: -radius * Math.cos(angle) };
 }
 
@@ -25,59 +30,104 @@ interface Segment {
   label: { x: number; y: number };
 }
 
-function arcSegment(start: number, end: number): Segment {
-  const size = end - start;
-  const middle = (start + end) / 2;
-  const control = point(INNER_RADIUS - (size * NOTE_RADIUS) / 3.5, middle);
+/** `delta` is the signed number of slots from start to end, the short way around. */
+function arcSegment(start: number, delta: number): Segment {
+  const size = Math.abs(delta);
+  const middle = start + delta / 2;
+  const control = point(Math.max(-13, INNER_RADIUS - (size * NOTE_RADIUS) / 3.5), middle);
   return {
-    path: `M ${xy(point(INNER_RADIUS, start))} Q ${xy(control)} ${xy(point(INNER_RADIUS, end))}`,
-    label: point(INNER_RADIUS - size * 8.5, middle),
+    path: `M ${xy(point(INNER_RADIUS, start))} Q ${xy(control)} ${xy(point(INNER_RADIUS, start + delta))}`,
+    label: point(Math.max(-1, INNER_RADIUS - size * 8.5), middle),
   };
 }
 
-function gearSegment(start: number, end: number): Segment {
-  const inset = Math.min(0.26, (end - start) / 4);
-  const arcStart = point(GEAR_RADIUS, start + inset);
-  const arcEnd = point(GEAR_RADIUS, end - inset);
-  const largeArc = end - start - 2 * inset > 6 ? 1 : 0;
+function chordSegment(start: number, delta: number): Segment {
+  const from = point(INNER_RADIUS, start);
+  const to = point(INNER_RADIUS, start + delta);
   return {
-    path: [
-      `M ${xy(point(INNER_RADIUS, start + inset / 3))}`,
-      `L ${xy(arcStart)}`,
-      `A ${GEAR_RADIUS} ${GEAR_RADIUS} 0 ${largeArc} 1 ${xy(arcEnd)}`,
-      `L ${xy(point(INNER_RADIUS, end - inset / 3))}`,
-    ].join(" "),
-    label: point(GEAR_RADIUS * 0.85, (start + end) / 2),
+    path: `M ${xy(from)} L ${xy(to)}`,
+    label: { x: ((from.x + to.x) / 2) * 0.78, y: ((from.y + to.y) / 2) * 0.78 },
   };
 }
 
-function wedgeSegment(start: number, end: number): Segment {
+function wedgeSegment(start: number, delta: number): Segment {
   return {
     path: `M 0 0 L ${xy(point(INNER_RADIUS, start))}`,
-    label: point(INNER_RADIUS * 0.41, (start + end) / 2),
+    label: point(INNER_RADIUS * 0.41, start + delta / 2),
   };
 }
 
-const SEGMENT_BUILDERS: Record<LineStyle, (start: number, end: number) => Segment> = {
+const SEGMENT_BUILDERS: Record<LineStyle, (start: number, delta: number) => Segment> = {
   arcs: arcSegment,
-  gear: gearSegment,
+  shape: chordSegment,
   wedges: wedgeSegment,
 };
 
-/** Every scale is padded to 12 positions so lines can slide between scales of different sizes. */
-const padToTwelve = (offsets: number[]) => Array.from({ length: 12 }, (_, i) => offsets[i] ?? 12);
+/** Every scale is padded to 12 positions (extras sit on the root) so lines can slide between scales of different sizes. */
+const padToTwelve = (offsets: number[]) => Array.from({ length: 12 }, (_, i) => offsets[i] ?? 0);
 
 interface NoteCircleProps {
   spelled: SpelledScale;
   rootPitch: number;
   lineStyle: LineStyle;
+  layout: CircleLayout;
   onPlay: (offset: number) => void;
 }
 
-export function NoteCircle({ spelled, rootPitch, lineStyle, onPlay }: NoteCircleProps) {
-  const offsetsKey = spelled.offsets.join(",");
-  const target = useMemo(() => padToTwelve(offsetsKey.split(",").map(Number)), [offsetsKey]);
-  const positions = useTweenedValues(target, MORPH_MS);
+interface IntervalLinesProps {
+  offsetsKey: string;
+  steps: number[];
+  lineStyle: LineStyle;
+  layout: CircleLayout;
+}
+
+/**
+ * Lines join neighboring notes around the circle. In chromatic order that's each step of the scale; in fifths order
+ * the steps aren't neighbors, so the labels are left off. Remounted per layout so lines fade in after notes move.
+ */
+function IntervalLines({ offsetsKey, steps, lineStyle, layout }: IntervalLinesProps) {
+  const targets = useMemo(() => {
+    const offsets = offsetsKey.split(",").map(Number);
+    const ordered = [...offsets].sort((a, b) => slotOf(a, layout) - slotOf(b, layout));
+    return padToTwelve(ordered).map((offset) => slotOf(offset, layout));
+  }, [offsetsKey, layout]);
+  const slots = useTweenedValues(targets, MORPH_MS, 12);
+
+  const buildSegment = SEGMENT_BUILDERS[lineStyle];
+  const segments = slots.map((start, i) => {
+    const delta = wrappedDelta(start, slots[i + 1] ?? slots[0]!, 12);
+    return {
+      ...buildSegment(start, delta),
+      opacity: Math.min(1, Math.abs(delta) / 0.5),
+      text: layout === "chromatic" && steps[i] !== undefined ? (STEP_LABELS[steps[i]] ?? String(steps[i])) : null,
+    };
+  });
+  const shapePath = `M ${slots.map((slot) => xy(point(INNER_RADIUS, slot))).join(" L ")} Z`;
+
+  return (
+    <g className="interval-layer">
+      {lineStyle === "shape" && <path className="scale-shape" d={shapePath} />}
+      <g className="interval-lines">
+        {segments.map((segment, i) => (
+          <path key={i} d={segment.path} opacity={segment.opacity} />
+        ))}
+      </g>
+      <g className="interval-labels" aria-hidden="true">
+        {segments.map((segment, i) =>
+          segment.text === null ? null : (
+            <text key={i} x={segment.label.x} y={segment.label.y} opacity={segment.opacity} dy="0.35em">
+              {segment.text}
+            </text>
+          ),
+        )}
+      </g>
+    </g>
+  );
+}
+
+export function NoteCircle({ spelled, rootPitch, lineStyle, layout, onPlay }: NoteCircleProps) {
+  const noteTargets = useMemo(() => Array.from({ length: 12 }, (_, offset) => slotOf(offset, layout)), [layout]);
+  const noteSlots = useTweenedValues(noteTargets, LAYOUT_MS, 12);
   const noteElements = useRef(new Map<number, SVGGElement>());
 
   useEffect(
@@ -95,42 +145,25 @@ export function NoteCircle({ spelled, rootPitch, lineStyle, onPlay }: NoteCircle
     [rootPitch],
   );
 
-  const buildSegment = SEGMENT_BUILDERS[lineStyle];
-  const segments = positions.map((start, i) => {
-    const end = positions[i + 1] ?? 12;
-    const size = end - start;
-    return {
-      ...buildSegment(start, end),
-      opacity: Math.min(1, Math.max(0, size / 0.5)),
-      step: spelled.steps[i],
-    };
-  });
-
   const indexByOffset = new Map(spelled.offsets.map((offset, i) => [offset, i]));
 
   return (
     <svg className="note-circle" viewBox="-57 -57 114 114" role="group" aria-label="Notes in the scale">
-      <g className={`interval-lines style-${lineStyle}`}>
-        {segments.map((segment, i) => (
-          <path key={i} d={segment.path} opacity={segment.opacity} />
-        ))}
-      </g>
-      <g className="interval-labels" aria-hidden="true">
-        {segments.map((segment, i) =>
-          segment.step === undefined ? null : (
-            <text key={i} x={segment.label.x} y={segment.label.y} opacity={segment.opacity} dy="0.35em">
-              {segment.step}
-            </text>
-          ),
-        )}
-      </g>
+      <IntervalLines
+        key={layout}
+        offsetsKey={spelled.offsets.join(",")}
+        steps={spelled.steps}
+        lineStyle={lineStyle}
+        layout={layout}
+      />
       {Array.from({ length: 12 }, (_, offset) => {
         const index = indexByOffset.get(offset);
         const inScale = index !== undefined;
         const note = inScale ? spelled.notes[index]! : noteNameForPitch(rootPitch + offset, spelled.flavor);
         const name = formatNote(note);
-        const center = point(NOTE_RADIUS, offset);
-        const degreeAt = point(NOTE_RADIUS + RING_RADIUS + 4.5, offset);
+        const slot = noteSlots[offset]!;
+        const center = point(NOTE_RADIUS, slot);
+        const degreeAt = point(NOTE_RADIUS + RING_RADIUS + 4.5, slot);
         const role = offset === 0 ? "root" : inScale ? "in-scale" : "out-of-scale";
         return (
           <g key={offset}>

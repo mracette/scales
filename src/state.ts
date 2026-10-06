@@ -1,4 +1,4 @@
-import type { LineStyle } from "./components/NoteCircle";
+import type { CircleLayout, LineStyle } from "./components/NoteCircle";
 import { type SpellingPreference, noteSlug, parseNoteSlug, pitchOf } from "./theory/notes";
 import { DEFAULT_SCALE_ID, getScale, spellScale } from "./theory/scales";
 
@@ -7,12 +7,15 @@ export interface AppState {
   rootPitch: number;
   spelling: SpellingPreference;
   lineStyle: LineStyle;
+  layout: CircleLayout;
 }
 
 const SPELLINGS: SpellingPreference[] = ["auto", "flat", "sharp"];
-const LINE_STYLES: LineStyle[] = ["arcs", "gear", "wedges"];
+const LINE_STYLES: LineStyle[] = ["arcs", "shape", "wedges"];
+const LAYOUTS: CircleLayout[] = ["chromatic", "fifths"];
 const SPELLING_KEY = "see-scales:spelling";
 const LINE_STYLE_KEY = "see-scales:line-style";
+const LAYOUT_KEY = "see-scales:layout";
 
 function readStored<T extends string>(key: string, allowed: T[], fallback: T): T {
   try {
@@ -27,6 +30,7 @@ export function storePreferences(state: AppState) {
   try {
     localStorage.setItem(SPELLING_KEY, state.spelling);
     localStorage.setItem(LINE_STYLE_KEY, state.lineStyle);
+    localStorage.setItem(LAYOUT_KEY, state.layout);
   } catch {
     // Storage can be unavailable (private mode, blocked cookies); preferences just won't persist.
   }
@@ -62,6 +66,7 @@ export function initialState(): AppState {
     rootPitch: 0,
     spelling: readStored(SPELLING_KEY, SPELLINGS, "auto"),
     lineStyle: readStored(LINE_STYLE_KEY, LINE_STYLES, "arcs"),
+    layout: readStored(LAYOUT_KEY, LAYOUTS, "chromatic"),
   };
   return { ...defaults, ...readHash(window.location.hash, defaults.spelling) };
 }

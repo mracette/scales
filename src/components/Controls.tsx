@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { formatNote, type SpellingPreference } from "../theory/notes";
 import { type Scale, spellScale } from "../theory/scales";
-import type { LineStyle } from "./NoteCircle";
+import type { CircleLayout, LineStyle } from "./NoteCircle";
 
 interface SegmentedProps<T extends string> {
   label: string;
@@ -79,8 +79,23 @@ export function LineStylePicker({ value, onChange }: { value: LineStyle; onChang
       onChange={onChange}
       options={[
         { value: "arcs", label: "Arcs" },
-        { value: "gear", label: "Gear" },
+        { value: "shape", label: "Shape" },
         { value: "wedges", label: "Wedges" },
+      ]}
+    />
+  );
+}
+
+export function LayoutPicker({ value, onChange }: { value: CircleLayout; onChange: (value: CircleLayout) => void }) {
+  return (
+    <Segmented
+      className="layout-picker"
+      label="Circle"
+      value={value}
+      onChange={onChange}
+      options={[
+        { value: "chromatic", label: "Chromatic", title: "Notes in semitone order" },
+        { value: "fifths", label: "Fifths", title: "Notes in circle-of-fifths order" },
       ]}
     />
   );

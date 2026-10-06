@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { isAudioUnlocked, onAudioUnlocked, playPitch } from "./audio";
-import { LineStylePicker, RootPicker, SpellingPicker } from "./components/Controls";
+import { LayoutPicker, LineStylePicker, RootPicker, SpellingPicker } from "./components/Controls";
 import { Keyboard } from "./components/Keyboard";
 import { NoteCircle } from "./components/NoteCircle";
 import { ScaleList } from "./components/ScaleList";
@@ -104,12 +104,20 @@ export function App() {
   }, [player.toggle, stepRoot, stepScale]);
 
   const rootName = formatNote(spelled.root);
+  const displayOptions = (
+    <>
+      <SpellingPicker value={state.spelling} onChange={(spelling) => update({ spelling })} />
+      <LayoutPicker value={state.layout} onChange={(layout) => update({ layout })} />
+      <LineStylePicker value={state.lineStyle} onChange={(lineStyle) => update({ lineStyle })} />
+    </>
+  );
 
   return (
     <div className="app">
       <aside className="sidebar">
         <Brand />
         <ScaleList scaleId={scale.id} onSelect={(scaleId) => update({ scaleId })} />
+        <div className="display-options">{displayOptions}</div>
         <Credits />
       </aside>
 
@@ -194,6 +202,7 @@ export function App() {
             spelled={spelled}
             rootPitch={state.rootPitch}
             lineStyle={state.lineStyle}
+            layout={state.layout}
             onPlay={(offset) => playPitch(state.rootPitch + offset)}
           />
           {!soundUnlocked && <p className="sound-hint">Click anywhere for sound</p>}
@@ -201,16 +210,14 @@ export function App() {
 
         <Keyboard spelled={spelled} rootPitch={state.rootPitch} onPlay={playPitch} />
 
-        <div className="bottom-row">
-          <SpellingPicker value={state.spelling} onChange={(spelling) => update({ spelling })} />
-          <button type="button" className="play-button" aria-pressed={player.playing} onClick={player.toggle}>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              {player.playing ? <rect x="6" y="6" width="12" height="12" rx="1.5" /> : <path d="M8 5.5v13l11-6.5z" />}
-            </svg>
-            {player.playing ? "Stop" : "Play scale"}
-          </button>
-          <LineStylePicker value={state.lineStyle} onChange={(lineStyle) => update({ lineStyle })} />
-        </div>
+        <button type="button" className="play-button" aria-pressed={player.playing} onClick={player.toggle}>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            {player.playing ? <rect x="6" y="6" width="12" height="12" rx="1.5" /> : <path d="M8 5.5v13l11-6.5z" />}
+          </svg>
+          {player.playing ? "Stop" : "Play scale"}
+        </button>
+
+        <div className="display-options mobile-only">{displayOptions}</div>
 
         <p className="shortcuts">
           <kbd>←</kbd> <kbd>→</kbd> scale · <kbd>↑</kbd> <kbd>↓</kbd> root · <kbd>space</kbd> play

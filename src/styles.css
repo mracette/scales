@@ -369,9 +369,24 @@ a:hover {
 }
 
 .note-circle {
-  width: min(100%, 540px, max(320px, calc(100dvh - 450px)));
+  width: min(100%, 560px, max(320px, calc(100dvh - 380px)));
   overflow: visible;
   user-select: none;
+}
+
+.interval-layer {
+  animation: lines-in 350ms ease-out 450ms both;
+}
+
+@keyframes lines-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.scale-shape {
+  fill: rgb(0 225 158 / 0.07);
+  fill-rule: evenodd;
 }
 
 .interval-lines path {
@@ -507,7 +522,7 @@ a:hover {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  justify-self: center;
+  margin-top: 18px;
   padding: 10px 22px 10px 18px;
   border: 2px solid var(--pink);
   border-radius: 999px;
@@ -531,18 +546,16 @@ a:hover {
 
 /* Controls */
 
-.bottom-row {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: end;
-  gap: 16px;
-  width: 100%;
-  max-width: 640px;
-  margin-top: 20px;
+.display-options {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 8px 0;
+  border-top: 1px solid var(--border);
 }
 
-.line-style-picker {
-  justify-self: end;
+.display-options.mobile-only {
+  display: none;
 }
 
 .control {
@@ -679,18 +692,16 @@ kbd {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
-  .bottom-row {
-    grid-template-columns: 1fr;
-    justify-items: center;
+  .display-options.mobile-only {
+    display: flex;
+    align-items: center;
+    margin-top: 28px;
+    padding: 0;
+    border: 0;
   }
 
-  .bottom-row .control {
-    justify-self: center;
+  .display-options .control {
     text-align: center;
-  }
-
-  .play-button {
-    order: -1;
   }
 }
 
